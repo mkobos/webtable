@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sha256 } from '@/lib/utils';
 
 export async function POST(request: NextRequest) {
-  const { password } = await request.json();
+  let password: string;
+  try {
+    const body = await request.json();
+    password = body.password;
+  } catch {
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
+  }
   const adminPassword = process.env.ADMIN_PASSWORD;
 
   if (!adminPassword || password !== adminPassword) {

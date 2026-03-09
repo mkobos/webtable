@@ -29,6 +29,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   async function loadTables() {
     const [{ data: tablesData }, { data: cellsData }] = await Promise.all([
@@ -52,20 +53,25 @@ export default function AdminPage() {
 
   async function handleCreate() {
     setCreating(true);
+    setError(null);
     const res = await fetch('/api/tables', { method: 'POST' });
     if (res.ok) {
       const { id } = await res.json();
       router.push(`/table/${id}`);
     } else {
       setCreating(false);
+      setError('Failed to create table. Please try again.');
     }
   }
 
   async function handleDelete(id: string) {
     setDeletingId(id);
+    setError(null);
     const res = await fetch(`/api/tables/${id}`, { method: 'DELETE' });
     if (res.ok) {
       setTables(prev => prev.filter(t => t.id !== id));
+    } else {
+      setError('Failed to delete table. Please try again.');
     }
     setDeletingId(null);
   }
@@ -73,6 +79,12 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 py-10">
+        {error && (
+          <div className="mb-4 bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700 flex items-center justify-between">
+            <span>{error}</span>
+            <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600 ml-4">✕</button>
+          </div>
+        )}
         <div className="flex items-center justify-between mb-8">
           <h1 className="text-2xl font-bold">Admin</h1>
           <div className="flex gap-2">

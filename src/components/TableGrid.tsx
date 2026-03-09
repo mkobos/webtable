@@ -53,6 +53,7 @@ export default function TableGrid({ tableId, initialCells, initialTitle }: Props
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState(initialTitle);
   const [focusRequest, setFocusRequest] = useState<FocusRequest | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const savingRef = useRef<Set<string>>(new Set());
 
   const { rows, cols } = useMemo(() => computeDimensions(grid), [grid]);
@@ -98,25 +99,31 @@ export default function TableGrid({ tableId, initialCells, initialTitle }: Props
       )
       .subscribe();
 
-    return () => { supabase.removeChannel(channel); };
+    return () => { channel.unsubscribe(); supabase.removeChannel(channel); };
   }, [tableId]);
 
   async function handleTitleSave(value: string) {
     setEditingTitle(false);
     if (value === title) return;
+    const previousTitle = title;
     setTitle(value);
     savingRef.current.add('title');
-    await supabase.from('tables').update({ title: value }).eq('id', tableId);
+    const { error } = await supabase.from('tables').update({ title: value }).eq('id', tableId);
     savingRef.current.delete('title');
+    if (error) {
+      setTitle(previousTitle);
+      setSaveError('Failed to save title. Please try again.');
+    }
   }
 
   async function handleSave(row: number, col: number, value: string) {
     const key = cellKey(row, col);
+    const previousValue = grid.get(key) ?? '';
     // Optimistically update local state
     setGrid(prev => { const next = new Map(prev); next.set(key, value); return next; });
     // Mark as saving so we ignore the Realtime echo
     savingRef.current.add(key);
-    await supabase.from('cells').upsert({
+    const { error } = await supabase.from('cells').upsert({
       table_id: tableId,
       row,
       col,
@@ -124,6 +131,10 @@ export default function TableGrid({ tableId, initialCells, initialTitle }: Props
       updated_at: new Date().toISOString(),
     });
     savingRef.current.delete(key);
+    if (error) {
+      setGrid(prev => { const next = new Map(prev); next.set(key, previousValue); return next; });
+      setSaveError('Failed to save cell. Please try again.');
+    }
   }
 
   function handleNavigate(row: number, col: number, dir: 'right' | 'down') {
@@ -140,6 +151,12 @@ export default function TableGrid({ tableId, initialCells, initialTitle }: Props
 
   return (
     <div className="flex flex-col h-screen">
+      {saveError && (
+        <div className="bg-red-50 border-b border-red-200 px-4 py-2 text-sm text-red-700 flex items-center justify-between">
+          <span>{saveError}</span>
+          <button onClick={() => setSaveError(null)} className="text-red-400 hover:text-red-600 ml-4">✕</button>
+        </div>
+      )}
       {/* Header */}
       <header className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white shrink-0 gap-4">
         {/* Editable title */}
@@ -154,6 +171,7 @@ export default function TableGrid({ tableId, initialCells, initialTitle }: Props
               if (e.key === 'Escape') { setTitleDraft(title); setEditingTitle(false); }
             }}
             placeholder="Untitled table"
+            maxLength={100}
             className="flex-1 min-w-0 text-left text-base font-semibold bg-gray-50 border border-gray-300 rounded px-2 py-0.5 outline-none focus:border-blue-500"
           />
         ) : (

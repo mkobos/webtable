@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { sha256 } from '@/lib/utils';
 
+let cachedToken: string | undefined;
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -9,7 +11,8 @@ export async function middleware(request: NextRequest) {
   const password = process.env.ADMIN_PASSWORD;
   if (!password) return NextResponse.next(); // no password configured → open access
 
-  const expectedToken = await sha256(password);
+  if (!cachedToken) cachedToken = await sha256(password);
+  const expectedToken = cachedToken;
   const sessionCookie = request.cookies.get('admin_session')?.value;
 
   if (sessionCookie !== expectedToken) {
