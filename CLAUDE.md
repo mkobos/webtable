@@ -7,9 +7,12 @@ Real-time collaborative spreadsheet app. Anonymous users create tables via uniqu
 ## Commands
 
 ```bash
-npm run dev      # Dev server at localhost:3000
-npm run build    # Production build
-npm start        # Run production build
+npm run dev           # Dev server at localhost:3000
+npm run build         # Production build
+npm start             # Run production build
+npm run test          # Run tests in watch mode
+npm run test:run      # Run tests once
+npm run test:coverage # Run tests with coverage report
 ```
 
 ## Environment Setup
@@ -122,5 +125,5 @@ Full setup SQL (including RLS policies and Realtime) is in `ARCHITECTURE.md`.
 
 - **iOS Safari zoom**: All inputs use `text-base` (16px min). Don't use smaller font sizes on inputs or iOS will auto-zoom the viewport.
 - **Anon key in browser**: Safe — RLS policies enforce what anonymous users can do.
-- **No tests**: No test suite exists yet.
+- **Tests**: Vitest + jsdom. No Supabase credentials needed. Run with `npm run test:run`.
 - **`supabaseAdmin` is server-only**: Never import `src/lib/supabaseAdmin.ts` in client components or `NEXT_PUBLIC_` contexts.

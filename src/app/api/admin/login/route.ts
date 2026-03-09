@@ -1,12 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-async function sha256(text: string): Promise<string> {
-  const encoded = new TextEncoder().encode(text);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', encoded);
-  return Array.from(new Uint8Array(hashBuffer))
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
-}
+import { sha256 } from '@/lib/utils';
 
 export async function POST(request: NextRequest) {
   const { password } = await request.json();

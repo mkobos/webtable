@@ -37,6 +37,18 @@ Open [http://localhost:3000](http://localhost:3000).
 | `SUPABASE_SECRET_KEY` | Supabase service role key (server-only) |
 | `ADMIN_PASSWORD` | Password for `/admin` (optional — omit to leave it open) |
 
+## Testing
+
+No Supabase credentials are needed to run tests.
+
+```bash
+npm run test          # Watch mode
+npm run test:run      # Single run
+npm run test:coverage # Single run with coverage report
+```
+
+The test suite covers pure utility functions, the `Cell` component, all four API routes, and the admin auth middleware (~40 tests).
+
 ## Admin Console
 
 Visit `/admin` to list, create, and delete tables. If `ADMIN_PASSWORD` is set, you'll be prompted to log in first.

@@ -20,7 +20,7 @@ function cellKey(row: number, col: number) {
   return `${row}:${col}`;
 }
 
-function buildGrid(cells: CellRow[]): GridState {
+export function buildGrid(cells: CellRow[]): GridState {
   const map: GridState = new Map();
   for (const c of cells) {
     map.set(cellKey(c.row, c.col), c.value);
@@ -28,7 +28,7 @@ function buildGrid(cells: CellRow[]): GridState {
   return map;
 }
 
-function computeDimensions(grid: GridState) {
+export function computeDimensions(grid: GridState) {
   let maxRow = -1;
   let maxCol = -1;
   for (const key of grid.keys()) {

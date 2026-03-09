@@ -11,7 +11,7 @@ import { supabase, type TableRow, type CellRow } from '@/lib/supabase';
 
 type TableMeta = TableRow & { rows: number; cols: number };
 
-function computeDimensions(cells: Pick<CellRow, 'table_id' | 'row' | 'col'>[]) {
+export function computeDimensions(cells: Pick<CellRow, 'table_id' | 'row' | 'col'>[]) {
   const dims = new Map<string, { rows: number; cols: number }>();
   for (const c of cells) {
     const prev = dims.get(c.table_id) ?? { rows: 0, cols: 0 };
