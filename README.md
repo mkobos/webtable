@@ -1,5 +1,7 @@
 # Web Table
 
+[![Test](https://github.com/mkobos/webtable/actions/workflows/test.yml/badge.svg)](https://github.com/mkobos/webtable/actions/workflows/test.yml)
+
 A real-time collaborative spreadsheet app. Create a table, share the URL, and edit cells together — no login required.
 
 ## Features
