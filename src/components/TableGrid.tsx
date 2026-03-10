@@ -197,7 +197,7 @@ export default function TableGrid({ tableId, initialCells, initialTitle }: Props
           <tbody>
             {Array.from({ length: rows }, (_, r) => (
               <tr key={r}>
-                <td className={`w-9 min-w-[2.25rem] h-9 text-center text-xs select-none border-r-2 border-gray-300 ${r === 0 ? 'bg-gray-50 border-b-2' : 'border-b border-gray-200 text-gray-400'}`}>
+                <td className={`w-9 min-w-[2.25rem] h-9 text-center text-xs select-none border-r-2 border-gray-300 ${r === 0 ? 'bg-gray-50 border-b-2' : r % 2 === 0 ? 'bg-gray-100 border-b border-gray-200 text-gray-400' : 'border-b border-gray-200 text-gray-400'}`}>
                   {r > 0 ? r : ''}
                 </td>
                 {Array.from({ length: cols }, (_, c) => (

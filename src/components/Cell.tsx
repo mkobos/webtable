@@ -66,7 +66,7 @@ export default function Cell({ value, row, col, isFirstRow, isFirstCol, focusTok
 
   return (
     <td
-      className={`relative p-0 min-w-[120px] h-9 ${borderClasses} ${isFirstRow ? 'bg-gray-50' : ''} ${!editing ? 'cursor-pointer hover:bg-blue-50' : ''}`}
+      className={`relative p-0 min-w-[120px] h-9 ${borderClasses} ${isFirstRow ? 'bg-gray-50' : row % 2 === 0 ? 'bg-gray-100' : ''} ${!editing ? 'cursor-pointer hover:bg-blue-50' : ''}`}
       onClick={!editing ? startEdit : undefined}
     >
       {editing ? (
