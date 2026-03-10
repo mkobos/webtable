@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { NextRequest } from 'next/server';
-import { middleware, config } from '@/middleware';
+import { proxy as middleware, config } from '@/proxy';
 
 afterEach(() => {
   vi.unstubAllEnvs();
