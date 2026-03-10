@@ -9,7 +9,9 @@ async function logout() {
 }
 import { supabase, type TableRow, type CellRow } from '@/lib/supabase';
 
-type TableMeta = TableRow & { rows: number; cols: number };
+type TableMeta = TableRow & { rows: number; cols: number; lastEdit: string | null };
+type SortKey = 'title' | 'rows' | 'cols' | 'created_at' | 'lastEdit';
+type SortDir = 'asc' | 'desc';
 
 export function computeDimensions(cells: Pick<CellRow, 'table_id' | 'row' | 'col'>[]) {
   const dims = new Map<string, { rows: number; cols: number }>();
@@ -23,6 +25,30 @@ export function computeDimensions(cells: Pick<CellRow, 'table_id' | 'row' | 'col
   return dims;
 }
 
+export function sortTables(tables: TableMeta[], key: SortKey, dir: SortDir): TableMeta[] {
+  return [...tables].sort((a, b) => {
+    const rawA = a[key];
+    const rawB = b[key];
+    // nulls always sort last regardless of direction
+    if (rawA === null && rawB === null) return 0;
+    if (rawA === null) return 1;
+    if (rawB === null) return -1;
+    let av: string | number = rawA;
+    let bv: string | number = rawB;
+    if (typeof av === 'string' && typeof bv === 'string') {
+      av = av.toLowerCase();
+      bv = bv.toLowerCase();
+    }
+    const cmp = av < bv ? -1 : av > bv ? 1 : 0;
+    return dir === 'asc' ? cmp : -cmp;
+  });
+}
+
+function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
+  if (!active) return <span className="ml-1 text-gray-300">↕</span>;
+  return <span className="ml-1">{dir === 'asc' ? '↑' : '↓'}</span>;
+}
+
 export default function AdminPage() {
   const router = useRouter();
   const [tables, setTables] = useState<TableMeta[]>([]);
@@ -30,26 +56,44 @@ export default function AdminPage() {
   const [creating, setCreating] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [sortKey, setSortKey] = useState<SortKey>('created_at');
+  const [sortDir, setSortDir] = useState<SortDir>('desc');
 
   async function loadTables() {
     const [{ data: tablesData }, { data: cellsData }] = await Promise.all([
       supabase.from('tables').select('id, title, created_at').order('created_at', { ascending: false }),
-      supabase.from('cells').select('table_id, row, col'),
+      supabase.from('cells').select('table_id, row, col, updated_at'),
     ]);
 
     const dims = computeDimensions((cellsData ?? []) as Pick<CellRow, 'table_id' | 'row' | 'col'>[]);
+
+    const lastEdits = new Map<string, string>();
+    for (const c of (cellsData ?? []) as Pick<CellRow, 'table_id' | 'updated_at'>[]) {
+      const prev = lastEdits.get(c.table_id);
+      if (!prev || c.updated_at > prev) lastEdits.set(c.table_id, c.updated_at);
+    }
 
     setTables(
       ((tablesData ?? []) as TableRow[]).map(t => ({
         ...t,
         rows: dims.get(t.id)?.rows ?? 0,
         cols: dims.get(t.id)?.cols ?? 0,
+        lastEdit: lastEdits.get(t.id) ?? null,
       }))
     );
     setLoading(false);
   }
 
   useEffect(() => { loadTables(); }, []);
+
+  function handleSort(key: SortKey) {
+    if (key === sortKey) {
+      setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortKey(key);
+      setSortDir('asc');
+    }
+  }
 
   async function handleCreate() {
     setCreating(true);
@@ -75,6 +119,11 @@ export default function AdminPage() {
     }
     setDeletingId(null);
   }
+
+  const sortedTables = sortTables(tables, sortKey, sortDir);
+
+  const thClass = (key: SortKey, align: 'left' | 'right' = 'left') =>
+    `px-4 py-3 font-semibold text-gray-600 cursor-pointer select-none hover:text-gray-900 text-${align}`;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -113,15 +162,26 @@ export default function AdminPage() {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Name</th>
-                  <th className="text-right px-4 py-3 font-semibold text-gray-600">Rows</th>
-                  <th className="text-right px-4 py-3 font-semibold text-gray-600">Cols</th>
-                  <th className="text-left px-4 py-3 font-semibold text-gray-600">Created</th>
+                  <th className={thClass('title')} onClick={() => handleSort('title')}>
+                    Name <SortIcon active={sortKey === 'title'} dir={sortDir} />
+                  </th>
+                  <th className={thClass('rows', 'right')} onClick={() => handleSort('rows')}>
+                    Rows <SortIcon active={sortKey === 'rows'} dir={sortDir} />
+                  </th>
+                  <th className={thClass('cols', 'right')} onClick={() => handleSort('cols')}>
+                    Cols <SortIcon active={sortKey === 'cols'} dir={sortDir} />
+                  </th>
+                  <th className={thClass('created_at')} onClick={() => handleSort('created_at')}>
+                    Created <SortIcon active={sortKey === 'created_at'} dir={sortDir} />
+                  </th>
+                  <th className={thClass('lastEdit')} onClick={() => handleSort('lastEdit')}>
+                    Last edit <SortIcon active={sortKey === 'lastEdit'} dir={sortDir} />
+                  </th>
                   <th className="px-4 py-3" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {tables.map(t => (
+                {sortedTables.map(t => (
                   <tr key={t.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3">
                       <a
@@ -135,6 +195,9 @@ export default function AdminPage() {
                     <td className="px-4 py-3 text-right text-gray-500">{t.cols}</td>
                     <td className="px-4 py-3 text-gray-500">
                       {new Date(t.created_at).toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3 text-gray-500">
+                      {t.lastEdit ? new Date(t.lastEdit).toLocaleString() : <span className="text-gray-300">—</span>}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <button
