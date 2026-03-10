@@ -106,10 +106,20 @@ CREATE POLICY "anon update cells"  ON cells  FOR UPDATE USING (true);
 ALTER PUBLICATION supabase_realtime ADD TABLE tables, cells;
 ```
 
-**Credentials** — go to **Project Settings → API Keys**. Copy the Project URL from **Project Settings → Data API** and the **Publishable key** (starts with `sb_publishable_...`) from the API Keys page. Add them to `.env.local`:
+**Credentials**:
+
+Copy the following information
+
+- Project URL from **Project Settings -> Data API**
+- Publishable key from **Project Settings -> API Keys** (starts with `sb_publishable_...`)
+- Secret key from **Project Settings -> API Keys** (starts with `sb_secret_...`)
+
+to `.env.local` file:
+
 ```
 NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_...
+SUPABASE_SECRET_KEY=sb_secret_...
 ```
 
 ## Admin console
@@ -124,6 +134,45 @@ Admin capabilities:
 Two separate Supabase clients are used:
 - **`supabase.ts`** — anon key, safe for the browser (`NEXT_PUBLIC_` prefix)
 - **`supabaseAdmin.ts`** — service role key, server-only (bypasses RLS). Never import in client components.
+
+## Environments
+
+Two environments are configured: **production** and **development**.
+
+| | Production | Development |
+|---|---|---|
+| Git branch | `main` | `dev` |
+| Supabase project | `webtable-production` | `webtable-development` |
+| Vercel environment | Production | Development |
+| URL | Primary Vercel domain | Auto-generated Vercel preview URL (no custom alias) |
+
+### How environment variables are scoped in Vercel
+
+All four variables (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SECRET_KEY`, `ADMIN_PASSWORD`) are set twice in **Settings → Environment Variables**: once scoped to **Production** (pointing at `webtable-production`) and once scoped to **Development** (pointing at `webtable-development`).
+
+> **Important:** `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are baked into the JS bundle at build time. Never use Vercel's "Promote to Production" dashboard button — it would leave client-side code pointing at the development Supabase project. Always promote by merging `dev → main`, which triggers a fresh production build with the correct env vars.
+
+### Day-to-day workflow
+
+```bash
+# Develop a feature
+git checkout dev
+git checkout -b feature/my-feature
+# ... work, open PR targeting dev ...
+
+# Promote to production
+git checkout main
+git merge dev
+git push
+```
+
+### GitHub Actions
+
+Tests run automatically on push and pull request for both `main` and `dev` (see `.github/workflows/test.yml`). No Supabase credentials are needed — the test suite uses mocks.
+
+### Initializing the development Supabase project
+
+Run the same setup SQL (tables, RLS policies, Realtime) from the **Supabase setup required** section above in the `webtable-development` SQL Editor.
 
 ## Notable implementation details
 
