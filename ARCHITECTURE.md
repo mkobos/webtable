@@ -143,12 +143,14 @@ Two environments are configured: **production** and **development**.
 |---|---|---|
 | Git branch | `main` | `dev` |
 | Supabase project | `webtable-production` | `webtable-development` |
-| Vercel environment | Production | Development |
+| Vercel environment | Production | Preview |
 | URL | Primary Vercel domain | Auto-generated Vercel preview URL (no custom alias) |
 
 ### How environment variables are scoped in Vercel
 
-All four variables (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SECRET_KEY`, `ADMIN_PASSWORD`) are set twice in **Settings → Environment Variables**: once scoped to **Production** (pointing at `webtable-production`) and once scoped to **Development** (pointing at `webtable-development`).
+All four variables (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SECRET_KEY`, `ADMIN_PASSWORD`) are set twice in **Settings → Environment Variables**: once scoped to **Production** (pointing at `webtable-production`) and once scoped to **Preview** (pointing at `webtable-development`).
+
+> **Gotcha:** Use **Preview**, not **Development**. Vercel's "Development" scope is for local machines only (pulled via `vercel env pull`) — it is never injected into branch or PR deployments. The `dev` branch deploys as a Preview deployment and needs Preview-scoped variables.
 
 > **Important:** `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are baked into the JS bundle at build time. Never use Vercel's "Promote to Production" dashboard button — it would leave client-side code pointing at the development Supabase project. Always promote by merging `dev → main`, which triggers a fresh production build with the correct env vars.
 
