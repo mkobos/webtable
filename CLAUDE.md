@@ -15,18 +15,7 @@ npm run test:run      # Run tests once
 npm run test:coverage # Run tests with coverage report
 ```
 
-## Environment Setup
-
-Copy `.env.local.example` to `.env.local` and fill in:
-
-```
-NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_...
-SUPABASE_SECRET_KEY=sb_secret_...
-ADMIN_PASSWORD=your-secret-password
-```
-
-`ADMIN_PASSWORD` is optional — if omitted, `/admin` is publicly accessible.
+Environment setup: see README.md. Database schema and full setup SQL: see DEVELOPMENT.md.
 
 ## File Structure
 
@@ -56,13 +45,6 @@ src/
 └── proxy.ts                         # Protects /admin/* routes via SHA-256 cookie
 ```
 
-## Tech Stack
-
-- **Next.js 16** (App Router, TypeScript) — routing, SSR, API routes
-- **Supabase** — PostgreSQL + built-in Realtime (WebSockets)
-- **Tailwind CSS 3.4** — styling
-- **Vercel** — deployment target
-
 ## Key Architectural Decisions
 
 ### Sparse cell storage
@@ -82,44 +64,17 @@ When a client saves a cell, it adds the key to `savingRef`. Incoming Realtime ev
 `app/table/[id]/page.tsx` is a server component — data fetched before HTML is sent. No loading spinner on first render.
 
 ### Admin auth
-Proxy (`src/proxy.ts`) checks `admin_session` cookie against SHA-256 hash of `ADMIN_PASSWORD`. No external auth library.
+Proxy (`src/proxy.ts`) checks `admin_session` cookie against SHA-256 hash of `ADMIN_PASSWORD`. No external auth library. Table creation is admin-only.
 
 ### Two Supabase clients
 - `src/lib/supabase.ts` — anon key, safe for browser (exposed via `NEXT_PUBLIC_`)
 - `src/lib/supabaseAdmin.ts` — service role key, server-only (bypasses RLS)
-
-## Database Schema
-
-```sql
-CREATE TABLE tables (
-    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    title      TEXT NOT NULL DEFAULT ''
-);
-
-CREATE TABLE cells (
-    table_id   UUID NOT NULL REFERENCES tables(id) ON DELETE CASCADE,
-    row        INTEGER NOT NULL,
-    col        INTEGER NOT NULL,
-    value      TEXT NOT NULL DEFAULT '',
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    PRIMARY KEY (table_id, row, col)
-);
-```
-
-Full setup SQL (including RLS policies and Realtime) is in `ARCHITECTURE.md`.
 
 ## Keyboard Navigation in Cells
 
 - **Tab** → save + move right
 - **Enter** → save + move down
 - **Escape** → cancel, restore original value
-
-## Admin Console
-
-- URL: `/admin` (redirects to `/admin/login` if password set)
-- Features: list all tables with dimensions, create new table, delete table (cascades to cells)
-- Table creation from the public landing page is disabled — only via admin console
 
 ## Common Gotchas
 

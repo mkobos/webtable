@@ -2,7 +2,7 @@
 
 [![Test](https://github.com/mkobos/webtable/actions/workflows/test.yml/badge.svg)](https://github.com/mkobos/webtable/actions/workflows/test.yml)
 
-A real-time collaborative spreadsheet app. Create a table, share the URL, and edit cells together — no login required.
+A simple real-time collaborative spreadsheet-like app. Create a table, share the URL, and edit cells together — no login required.
 
 ## Features
 
@@ -17,7 +17,7 @@ A real-time collaborative spreadsheet app. Create a table, share the URL, and ed
 ### Prerequisites
 
 - Node.js 18+
-- A [Supabase](https://supabase.com) project with the schema from `ARCHITECTURE.md`
+- A [Supabase](https://supabase.com) project with the schema from `DEVELOPMENT.md`
 
 ### Setup
 
@@ -61,3 +61,9 @@ Visit `/admin` to list, create, and delete tables. If `ADMIN_PASSWORD` is set, y
 - [Supabase](https://supabase.com) — PostgreSQL + Realtime
 - [Tailwind CSS](https://tailwindcss.com)
 - [Vercel](https://vercel.com) — deployment target
+
+## Documentation
+
+- **[SPEC.md](SPEC.md)** — product requirements
+- **[DEVELOPMENT.md](DEVELOPMENT.md)** — database schema, Supabase setup, environments, deployment
+- **[CLAUDE.md](CLAUDE.md)** — file structure, architectural rules, coding gotchas (for Claude Code)

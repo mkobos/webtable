@@ -2,7 +2,7 @@
 
 ## Overview
 
-A web application that allows many anonymous users to collaboratively edit a single table in real-time. The interface is simple and minimal — similar to a Google Spreadsheet, but without login and without any advanced math or programming features.
+A web application that allows many anonymous users to collaboratively edit a single table in real-time. The interface is simple and minimal — similar to a Google Spreadsheet, but without login and without any fomulas, calculations, references etc.
 
 ## User requirements
 
