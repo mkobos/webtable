@@ -1,4 +1,4 @@
-# Architecture
+# Development
 
 ## Tech stack
 
@@ -9,33 +9,7 @@
 
 The Supabase Realtime feature automatically broadcasts database changes to all connected clients, which removes the need for a custom WebSocket or Server-Sent Events server.
 
-## File structure
-
-```
-src/
-├── app/
-│   ├── layout.tsx                     # Root HTML shell
-│   ├── page.tsx                       # Landing page
-│   ├── api/
-│   │   ├── tables/route.ts            # POST /api/tables — create table
-│   │   ├── tables/[id]/route.ts       # DELETE /api/tables/[id] — admin only
-│   │   ├── admin/login/route.ts       # POST /api/admin/login
-│   │   └── admin/logout/route.ts      # POST /api/admin/logout
-│   ├── admin/
-│   │   ├── page.tsx                   # Admin dashboard
-│   │   └── login/page.tsx             # Admin login form
-│   └── table/[id]/
-│       ├── page.tsx                   # Table view — fetches initial data server-side
-│       └── not-found.tsx              # Shown for unknown table IDs
-├── components/
-│   ├── CreateTableButton.tsx          # Client button: calls POST, then navigates
-│   ├── TableGrid.tsx                  # Client component: owns grid state + Realtime subscription
-│   └── Cell.tsx                       # Single cell: click to edit, blur/Enter to save
-├── lib/
-│   ├── supabase.ts                    # Browser Supabase client + shared types
-│   └── supabaseAdmin.ts              # Server-only admin client (service role key)
-└── middleware.ts                      # Protects /admin/* routes
-```
+File structure: see CLAUDE.md.
 
 ## Database schema
 
@@ -124,16 +98,12 @@ SUPABASE_SECRET_KEY=sb_secret_...
 
 ## Admin console
 
-The admin console (`/admin`) is protected by middleware that checks a SHA-256 hashed password stored in an HTTP-only `admin_session` cookie (7-day expiry). If `ADMIN_PASSWORD` is not set in the environment, `/admin` is open to anyone.
+The admin console (`/admin`) is protected by proxy (`src/proxy.ts`) that checks a SHA-256 hashed password stored in an HTTP-only `admin_session` cookie (7-day expiry). If `ADMIN_PASSWORD` is not set in the environment, `/admin` is open to anyone.
 
 Admin capabilities:
 - List all tables (name, dimensions, creation date)
 - Create a new table (redirects to the table view)
 - Delete a table (cascades to all its cells)
-
-Two separate Supabase clients are used:
-- **`supabase.ts`** — anon key, safe for the browser (`NEXT_PUBLIC_` prefix)
-- **`supabaseAdmin.ts`** — service role key, server-only (bypasses RLS). Never import in client components.
 
 ## Environments
 
