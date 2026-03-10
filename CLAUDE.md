@@ -53,7 +53,7 @@ src/
 ├── lib/
 │   ├── supabase.ts                  # Browser Supabase client + shared types
 │   └── supabaseAdmin.ts             # Server-only admin client (service role key)
-└── middleware.ts                    # Protects /admin/* routes via SHA-256 cookie
+└── proxy.ts                         # Protects /admin/* routes via SHA-256 cookie
 ```
 
 ## Tech Stack
@@ -82,7 +82,7 @@ When a client saves a cell, it adds the key to `savingRef`. Incoming Realtime ev
 `app/table/[id]/page.tsx` is a server component — data fetched before HTML is sent. No loading spinner on first render.
 
 ### Admin auth
-Middleware (`src/middleware.ts`) checks `admin_session` cookie against SHA-256 hash of `ADMIN_PASSWORD`. No external auth library.
+Proxy (`src/proxy.ts`) checks `admin_session` cookie against SHA-256 hash of `ADMIN_PASSWORD`. No external auth library.
 
 ### Two Supabase clients
 - `src/lib/supabase.ts` — anon key, safe for browser (exposed via `NEXT_PUBLIC_`)
