@@ -3,45 +3,13 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase, type TableRow, type CellRow } from '@/lib/supabase';
+import { computeTableDimensions, sortTables, type TableMeta, type SortKey, type SortDir } from '@/lib/gridUtils';
 
 async function logout() {
-  await fetch('/api/admin/logout', { method: 'POST' });
-  window.location.href = '/admin/login';
-}
-
-type TableMeta = TableRow & { rows: number; cols: number; lastEdit: string | null };
-type SortKey = 'title' | 'rows' | 'cols' | 'created_at' | 'lastEdit';
-type SortDir = 'asc' | 'desc';
-
-export function computeDimensions(cells: Pick<CellRow, 'table_id' | 'row' | 'col'>[]) {
-  const dims = new Map<string, { rows: number; cols: number }>();
-  for (const c of cells) {
-    const prev = dims.get(c.table_id) ?? { rows: 0, cols: 0 };
-    dims.set(c.table_id, {
-      rows: Math.max(prev.rows, c.row + 1),
-      cols: Math.max(prev.cols, c.col + 1),
-    });
+  const res = await fetch('/api/admin/logout', { method: 'POST' });
+  if (res.ok) {
+    window.location.href = '/admin/login';
   }
-  return dims;
-}
-
-export function sortTables(tables: TableMeta[], key: SortKey, dir: SortDir): TableMeta[] {
-  return [...tables].sort((a, b) => {
-    const rawA = a[key];
-    const rawB = b[key];
-    // nulls always sort last regardless of direction
-    if (rawA === null && rawB === null) return 0;
-    if (rawA === null) return 1;
-    if (rawB === null) return -1;
-    let av: string | number = rawA;
-    let bv: string | number = rawB;
-    if (typeof av === 'string' && typeof bv === 'string') {
-      av = av.toLowerCase();
-      bv = bv.toLowerCase();
-    }
-    const cmp = av < bv ? -1 : av > bv ? 1 : 0;
-    return dir === 'asc' ? cmp : -cmp;
-  });
 }
 
 function SortIcon({ active, dir }: { active: boolean; dir: SortDir }) {
@@ -71,7 +39,7 @@ export default function AdminPage() {
       return;
     }
 
-    const dims = computeDimensions(cellsData as Pick<CellRow, 'table_id' | 'row' | 'col'>[]);
+    const dims = computeTableDimensions(cellsData as Pick<CellRow, 'table_id' | 'row' | 'col'>[]);
 
     const lastEdits = new Map<string, string>();
     for (const c of cellsData as Pick<CellRow, 'table_id' | 'updated_at'>[]) {

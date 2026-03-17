@@ -1,11 +1,6 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 
-// admin/page.tsx imports supabase at module level — mock it to avoid needing real credentials
-vi.mock('@/lib/supabase', () => ({
-  supabase: { from: vi.fn(), channel: vi.fn() },
-}));
-
-import { computeDimensions, sortTables } from '@/app/admin/page';
+import { computeTableDimensions, sortTables } from '@/lib/gridUtils';
 
 const makeTable = (overrides: object) => ({
   id: 'x',
@@ -17,19 +12,19 @@ const makeTable = (overrides: object) => ({
   ...overrides,
 });
 
-describe('admin computeDimensions', () => {
+describe('computeTableDimensions', () => {
   it('returns empty map for empty array', () => {
-    const dims = computeDimensions([]);
+    const dims = computeTableDimensions([]);
     expect(dims.size).toBe(0);
   });
 
   it('maps a single cell to correct row/col counts', () => {
-    const dims = computeDimensions([{ table_id: 't1', row: 2, col: 3 }]);
+    const dims = computeTableDimensions([{ table_id: 't1', row: 2, col: 3 }]);
     expect(dims.get('t1')).toEqual({ rows: 3, cols: 4 });
   });
 
   it('tracks maximum row and col for the same table', () => {
-    const dims = computeDimensions([
+    const dims = computeTableDimensions([
       { table_id: 't1', row: 0, col: 0 },
       { table_id: 't1', row: 4, col: 2 },
     ]);
@@ -37,7 +32,7 @@ describe('admin computeDimensions', () => {
   });
 
   it('tracks two different tables separately', () => {
-    const dims = computeDimensions([
+    const dims = computeTableDimensions([
       { table_id: 'a', row: 1, col: 1 },
       { table_id: 'b', row: 3, col: 5 },
     ]);

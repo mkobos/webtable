@@ -24,6 +24,7 @@ src/
 ├── app/
 │   ├── layout.tsx                   # Root HTML shell
 │   ├── page.tsx                     # Landing page
+│   ├── error.tsx                    # Global error boundary
 │   ├── api/
 │   │   ├── tables/route.ts          # POST /api/tables — create table
 │   │   ├── tables/[id]/route.ts     # DELETE /api/tables/[id] — admin only
@@ -34,14 +35,16 @@ src/
 │   │   └── login/page.tsx           # Admin login form
 │   └── table/[id]/
 │       ├── page.tsx                 # Table view — SSR initial data fetch
+│       ├── error.tsx                # Table-specific error boundary
 │       └── not-found.tsx            # 404 for unknown table IDs
 ├── components/
 │   ├── TableGrid.tsx                # Grid state, Realtime subscription, title edit
-│   ├── Cell.tsx                     # Single cell edit (click, keyboard nav, save)
-│   └── CreateTableButton.tsx        # Landing page "Create" button
+│   └── Cell.tsx                     # Single cell edit (click, keyboard nav, save)
 ├── lib/
 │   ├── supabase.ts                  # Browser Supabase client + shared types
-│   └── supabaseAdmin.ts             # Server-only admin client (service role key)
+│   ├── supabaseAdmin.ts             # Server-only admin client (service role key)
+│   ├── gridUtils.ts                 # Shared table dimension + sort utilities
+│   └── utils.ts                     # SHA-256 helper
 └── proxy.ts                         # Protects /admin/* routes via SHA-256 cookie
 ```
 
@@ -58,13 +61,13 @@ const displayCols = Math.max(8, maxUsedCol + 3);
 No "add row/col" buttons — always 2–3 empty cells beyond the last filled one.
 
 ### Realtime echo suppression
-When a client saves a cell, it adds the key to `savingRef`. Incoming Realtime events for keys in that set are ignored to prevent flicker.
+When a client saves a cell, it adds the key to `savingRef`. Incoming Realtime events for keys in that set are ignored to prevent flicker. Keys are removed after a 2-second delay to cover late-arriving echoes.
 
 ### SSR initial load
 `app/table/[id]/page.tsx` is a server component — data fetched before HTML is sent. No loading spinner on first render.
 
 ### Admin auth
-Proxy (`src/proxy.ts`) checks `admin_session` cookie against SHA-256 hash of `ADMIN_PASSWORD`. No external auth library. Table creation is admin-only.
+Proxy (`src/proxy.ts`) checks `admin_session` cookie against SHA-256 hash of `ADMIN_PASSWORD`. No external auth library. Table creation is admin-only. Admin-only API routes (e.g., DELETE `/api/tables/[id]`) also verify the cookie directly.
 
 ### Two Supabase clients
 - `src/lib/supabase.ts` — anon key, safe for browser (exposed via `NEXT_PUBLIC_`)

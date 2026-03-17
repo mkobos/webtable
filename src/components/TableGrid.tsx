@@ -15,6 +15,8 @@ type GridState = Map<string, string>; // key: "row:col", value: cell content
 const MIN_ROWS = 5;
 const MIN_COLS = 2;
 const PADDING = 1; // extra empty rows/cols beyond last used
+const MAX_ROW = 999;
+const MAX_COL = 999;
 
 function cellKey(row: number, col: number) {
   return `${row}:${col}`;
@@ -113,7 +115,7 @@ export default function TableGrid({ tableId, initialCells, initialTitle }: Props
     setTitle(value);
     savingRef.current.add('title');
     const { error } = await supabase.from('tables').update({ title: value }).eq('id', tableId);
-    savingRef.current.delete('title');
+    setTimeout(() => savingRef.current.delete('title'), 2000);
     if (error) {
       setTitle(previousTitle);
       setSaveError('Failed to save title. Please try again.');
@@ -121,6 +123,7 @@ export default function TableGrid({ tableId, initialCells, initialTitle }: Props
   }
 
   const handleSave = useCallback(async (row: number, col: number, value: string) => {
+    if (row < 0 || row > MAX_ROW || col < 0 || col > MAX_COL) return;
     const key = cellKey(row, col);
     const previousValue = gridRef.current.get(key) ?? '';
     // Optimistically update local state
@@ -134,7 +137,8 @@ export default function TableGrid({ tableId, initialCells, initialTitle }: Props
       value,
       updated_at: new Date().toISOString(),
     });
-    savingRef.current.delete(key);
+    // Delay removal to cover late-arriving Realtime echoes
+    setTimeout(() => savingRef.current.delete(key), 2000);
     if (error) {
       setGrid(prev => { const next = new Map(prev); next.set(key, previousValue); return next; });
       setSaveError('Failed to save cell. Please try again.');

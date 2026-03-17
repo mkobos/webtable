@@ -61,7 +61,7 @@ function LoginForm() {
 
 export default function AdminLoginPage() {
   return (
-    <Suspense>
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen text-gray-400 text-sm">Loading…</div>}>
       <LoginForm />
     </Suspense>
   );
