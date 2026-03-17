@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Cell from '@/components/Cell';
@@ -15,7 +15,9 @@ function renderCell(overrides: Partial<React.ComponentProps<typeof Cell>> = {}) 
     onNavigate: vi.fn(),
     ...overrides,
   };
-  const result = render(<Cell {...props} />);
+  const result = render(
+    <table><tbody><tr><Cell {...props} /></tr></tbody></table>
+  );
   return { ...result, onSave: props.onSave, onNavigate: props.onNavigate };
 }
 
@@ -90,7 +92,7 @@ describe('Cell', () => {
       const { rerender } = renderCell({ value: 'old' });
       expect(screen.getByText('old')).toBeInTheDocument();
       rerender(
-        <Cell
+        <table><tbody><tr><Cell
           value="new"
           row={0}
           col={0}
@@ -99,7 +101,7 @@ describe('Cell', () => {
           focusToken={0}
           onSave={vi.fn()}
           onNavigate={vi.fn()}
-        />
+        /></tr></tbody></table>
       );
       expect(screen.getByText('new')).toBeInTheDocument();
     });
@@ -110,7 +112,7 @@ describe('Cell', () => {
       const { rerender } = renderCell({ value: 'x', focusToken: 0 });
       expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
       rerender(
-        <Cell
+        <table><tbody><tr><Cell
           value="x"
           row={0}
           col={0}
@@ -119,7 +121,7 @@ describe('Cell', () => {
           focusToken={1}
           onSave={vi.fn()}
           onNavigate={vi.fn()}
-        />
+        /></tr></tbody></table>
       );
       expect(screen.getByRole('textbox')).toBeInTheDocument();
     });

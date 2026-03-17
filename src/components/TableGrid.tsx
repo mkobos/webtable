@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase, type CellRow } from '@/lib/supabase';
 import Cell from './Cell';
 
@@ -48,6 +48,7 @@ type FocusRequest = { row: number; col: number; token: number };
 
 export default function TableGrid({ tableId, initialCells, initialTitle }: Props) {
   const [grid, setGrid] = useState<GridState>(() => buildGrid(initialCells));
+  const gridRef = useRef<GridState>(grid);
   const [copied, setCopied] = useState(false);
   const [title, setTitle] = useState(initialTitle);
   const [editingTitle, setEditingTitle] = useState(false);
@@ -55,6 +56,9 @@ export default function TableGrid({ tableId, initialCells, initialTitle }: Props
   const [focusRequest, setFocusRequest] = useState<FocusRequest | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const savingRef = useRef<Set<string>>(new Set());
+
+  // Keep gridRef in sync with grid state
+  useEffect(() => { gridRef.current = grid; }, [grid]);
 
   const { rows, cols } = useMemo(() => computeDimensions(grid), [grid]);
 
@@ -116,9 +120,9 @@ export default function TableGrid({ tableId, initialCells, initialTitle }: Props
     }
   }
 
-  async function handleSave(row: number, col: number, value: string) {
+  const handleSave = useCallback(async (row: number, col: number, value: string) => {
     const key = cellKey(row, col);
-    const previousValue = grid.get(key) ?? '';
+    const previousValue = gridRef.current.get(key) ?? '';
     // Optimistically update local state
     setGrid(prev => { const next = new Map(prev); next.set(key, value); return next; });
     // Mark as saving so we ignore the Realtime echo
@@ -135,13 +139,13 @@ export default function TableGrid({ tableId, initialCells, initialTitle }: Props
       setGrid(prev => { const next = new Map(prev); next.set(key, previousValue); return next; });
       setSaveError('Failed to save cell. Please try again.');
     }
-  }
+  }, [tableId]);
 
-  function handleNavigate(row: number, col: number, dir: 'right' | 'down') {
+  const handleNavigate = useCallback((row: number, col: number, dir: 'right' | 'down') => {
     const nextRow = dir === 'down' ? row + 1 : row;
     const nextCol = dir === 'right' ? col + 1 : col;
     setFocusRequest({ row: nextRow, col: nextCol, token: Date.now() });
-  }
+  }, []);
 
   async function copyUrl() {
     await navigator.clipboard.writeText(window.location.href);

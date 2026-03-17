@@ -17,6 +17,7 @@ const fakeReq = new Request('http://localhost');
 describe('DELETE /api/tables/[id]', () => {
   beforeEach(() => {
     mockEqTables.mockReset();
+    mockDeleteTables.mockReset();
     mockAdminFrom.mockReset();
     mockDeleteTables.mockReturnValue({ eq: mockEqTables });
     mockAdminFrom.mockReturnValue({ delete: mockDeleteTables });

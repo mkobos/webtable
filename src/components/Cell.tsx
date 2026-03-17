@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { memo, useState, useRef, useEffect } from 'react';
 
 type Props = {
   value: string;
@@ -13,7 +13,7 @@ type Props = {
   onNavigate: (row: number, col: number, dir: 'right' | 'down') => void;
 };
 
-export default function Cell({ value, row, col, isFirstRow, isFirstCol, focusToken, onSave, onNavigate }: Props) {
+function Cell({ value, row, col, isFirstRow, isFirstCol, focusToken, onSave, onNavigate }: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -77,6 +77,7 @@ export default function Cell({ value, row, col, isFirstRow, isFirstCol, focusTok
           onChange={e => setDraft(e.target.value)}
           onBlur={commit}
           onKeyDown={handleKeyDown}
+          maxLength={10000}
           // text-base (16px) prevents iOS Safari auto-zoom
           className="absolute inset-0 w-full h-full px-2 text-base bg-white border-2 border-blue-500 outline-none"
         />
@@ -86,3 +87,5 @@ export default function Cell({ value, row, col, isFirstRow, isFirstCol, focusTok
     </td>
   );
 }
+
+export default memo(Cell);

@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { supabase, type TableRow, type CellRow } from '@/lib/supabase';
 
 async function logout() {
   await fetch('/api/admin/logout', { method: 'POST' });
   window.location.href = '/admin/login';
 }
-import { supabase, type TableRow, type CellRow } from '@/lib/supabase';
 
 type TableMeta = TableRow & { rows: number; cols: number; lastEdit: string | null };
 type SortKey = 'title' | 'rows' | 'cols' | 'created_at' | 'lastEdit';
@@ -60,21 +60,27 @@ export default function AdminPage() {
   const [sortDir, setSortDir] = useState<SortDir>('desc');
 
   async function loadTables() {
-    const [{ data: tablesData }, { data: cellsData }] = await Promise.all([
+    const [{ data: tablesData, error: tablesError }, { data: cellsData, error: cellsError }] = await Promise.all([
       supabase.from('tables').select('id, title, created_at').order('created_at', { ascending: false }),
       supabase.from('cells').select('table_id, row, col, updated_at'),
     ]);
 
-    const dims = computeDimensions((cellsData ?? []) as Pick<CellRow, 'table_id' | 'row' | 'col'>[]);
+    if (tablesError || cellsError) {
+      setError('Failed to load tables.');
+      setLoading(false);
+      return;
+    }
+
+    const dims = computeDimensions(cellsData as Pick<CellRow, 'table_id' | 'row' | 'col'>[]);
 
     const lastEdits = new Map<string, string>();
-    for (const c of (cellsData ?? []) as Pick<CellRow, 'table_id' | 'updated_at'>[]) {
+    for (const c of cellsData as Pick<CellRow, 'table_id' | 'updated_at'>[]) {
       const prev = lastEdits.get(c.table_id);
       if (!prev || c.updated_at > prev) lastEdits.set(c.table_id, c.updated_at);
     }
 
     setTables(
-      ((tablesData ?? []) as TableRow[]).map(t => ({
+      (tablesData as TableRow[]).map(t => ({
         ...t,
         rows: dims.get(t.id)?.rows ?? 0,
         cols: dims.get(t.id)?.cols ?? 0,
@@ -123,7 +129,7 @@ export default function AdminPage() {
   const sortedTables = sortTables(tables, sortKey, sortDir);
 
   const thClass = (key: SortKey, align: 'left' | 'right' = 'left') =>
-    `px-4 py-3 font-semibold text-gray-600 cursor-pointer select-none hover:text-gray-900 text-${align}`;
+    `px-4 py-3 font-semibold text-gray-600 cursor-pointer select-none hover:text-gray-900 ${align === 'right' ? 'text-right' : 'text-left'}`;
 
   return (
     <div className="min-h-screen bg-gray-50">

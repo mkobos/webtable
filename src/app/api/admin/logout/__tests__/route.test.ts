@@ -10,5 +10,7 @@ describe('POST /api/admin/logout', () => {
     const setCookie = response.headers.get('set-cookie');
     expect(setCookie).toContain('admin_session=');
     expect(setCookie).toContain('Max-Age=0');
+    expect(setCookie).toContain('HttpOnly');
+    expect(setCookie?.toLowerCase()).toContain('samesite=lax');
   });
 });

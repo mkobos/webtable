@@ -16,6 +16,9 @@ import { POST } from '@/app/api/tables/route';
 describe('POST /api/tables', () => {
   beforeEach(() => {
     mockSingle.mockReset();
+    mockSelect.mockReset();
+    mockInsert.mockReset();
+    mockFrom.mockReset();
     mockSelect.mockReturnValue({ single: mockSingle });
     mockInsert.mockReturnValue({ select: mockSelect });
     mockFrom.mockReturnValue({ insert: mockInsert });
