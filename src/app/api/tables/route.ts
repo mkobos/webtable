@@ -1,7 +1,13 @@
-import { supabase } from '@/lib/supabase';
+import { NextRequest } from 'next/server';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
+import { verifyAdminSession } from '@/lib/auth';
 
-export async function POST() {
-  const { data, error } = await supabase
+export async function POST(req: NextRequest) {
+  if (!(await verifyAdminSession(req))) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { data, error } = await supabaseAdmin
     .from('tables')
     .insert({})
     .select('id')

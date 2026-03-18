@@ -75,6 +75,17 @@ CREATE POLICY "anon write cells"   ON cells  FOR INSERT WITH CHECK (true);
 CREATE POLICY "anon update cells"  ON cells  FOR UPDATE USING (true);
 ```
 
+**Server-side aggregate function** — used by the admin dashboard to compute table stats without downloading every cell:
+```sql
+CREATE OR REPLACE FUNCTION table_stats()
+RETURNS TABLE(table_id UUID, max_row INT, max_col INT, last_edit TIMESTAMPTZ)
+LANGUAGE sql STABLE AS $$
+  SELECT table_id, MAX(row), MAX(col), MAX(updated_at)
+  FROM cells
+  GROUP BY table_id;
+$$;
+```
+
 **Realtime** — run this in the SQL Editor (the Supabase dashboard UI for this has changed and is no longer straightforward):
 ```sql
 ALTER PUBLICATION supabase_realtime ADD TABLE tables, cells;

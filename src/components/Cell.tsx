@@ -13,10 +13,26 @@ type Props = {
   onNavigate: (row: number, col: number, dir: 'right' | 'down') => void;
 };
 
+function cellClassName(isFirstRow: boolean, isFirstCol: boolean, row: number, editing: boolean) {
+  const base = 'relative p-0 min-w-[120px] h-9';
+
+  const border = isFirstRow
+    ? 'border-gray-300 border-b-2 border-r'
+    : `border-gray-200 border-t border-b border-r${isFirstCol ? '' : ' border-l'}`;
+
+  const bg = isFirstRow ? 'bg-gray-50' : row % 2 === 0 ? 'bg-gray-100' : '';
+
+  const interaction = editing ? '' : 'cursor-pointer hover:bg-blue-50';
+
+  return `${base} ${border} ${bg} ${interaction}`;
+}
+
 function Cell({ value, row, col, isFirstRow, isFirstCol, focusToken, onSave, onNavigate }: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
   const inputRef = useRef<HTMLInputElement>(null);
+  const valueRef = useRef(value);
+  valueRef.current = value;
 
   // Keep draft in sync when external value changes (from Realtime)
   useEffect(() => {
@@ -26,10 +42,9 @@ function Cell({ value, row, col, isFirstRow, isFirstCol, focusToken, onSave, onN
   // Focus this cell when requested by parent
   useEffect(() => {
     if (focusToken > 0) {
-      setDraft(value);
+      setDraft(valueRef.current);
       setEditing(true);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focusToken]);
 
   function startEdit() {
@@ -57,16 +72,9 @@ function Cell({ value, row, col, isFirstRow, isFirstCol, focusToken, onSave, onN
     }
   }
 
-  const borderClasses = [
-    isFirstRow ? 'border-gray-300' : 'border-gray-200',
-    isFirstRow ? '' : 'border-t',
-    isFirstCol ? '' : 'border-l',
-    isFirstRow ? 'border-b-2 border-r' : 'border-b border-r',
-  ].join(' ');
-
   return (
     <td
-      className={`relative p-0 min-w-[120px] h-9 ${borderClasses} ${isFirstRow ? 'bg-gray-50' : row % 2 === 0 ? 'bg-gray-100' : ''} ${!editing ? 'cursor-pointer hover:bg-blue-50' : ''}`}
+      className={cellClassName(isFirstRow, isFirstCol, row, editing)}
       onClick={!editing ? startEdit : undefined}
     >
       {editing ? (

@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { supabase, type CellRow } from '@/lib/supabase';
+import { supabase, type CellRow, type TableRow } from '@/lib/supabase';
 import TableGrid from '@/components/TableGrid';
 
 export default async function TablePage({ params }: { params: Promise<{ id: string }> }) {
@@ -10,7 +10,7 @@ export default async function TablePage({ params }: { params: Promise<{ id: stri
     .from('tables')
     .select('id, title')
     .eq('id', id)
-    .single();
+    .single<Pick<TableRow, 'id' | 'title'>>();
 
   if (!table) notFound();
 
@@ -18,13 +18,14 @@ export default async function TablePage({ params }: { params: Promise<{ id: stri
   const { data: cells } = await supabase
     .from('cells')
     .select('table_id, row, col, value, updated_at')
-    .eq('table_id', id);
+    .eq('table_id', id)
+    .returns<CellRow[]>();
 
   return (
     <TableGrid
       tableId={id}
-      initialCells={(cells ?? []) as CellRow[]}
-      initialTitle={(table as { title: string }).title ?? ''}
+      initialCells={cells ?? []}
+      initialTitle={table.title ?? ''}
     />
   );
 }

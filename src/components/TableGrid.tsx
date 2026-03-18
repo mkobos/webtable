@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase, type CellRow } from '@/lib/supabase';
 import Cell from './Cell';
 
@@ -46,6 +46,18 @@ export function computeDimensions(grid: GridState) {
   };
 }
 
+function computeMaxUsed(cells: CellRow[]) {
+  let maxRow = -1;
+  let maxCol = -1;
+  for (const c of cells) {
+    if (c.value) {
+      if (c.row > maxRow) maxRow = c.row;
+      if (c.col > maxCol) maxCol = c.col;
+    }
+  }
+  return { maxRow, maxCol };
+}
+
 type FocusRequest = { row: number; col: number; token: number };
 
 export default function TableGrid({ tableId, initialCells, initialTitle }: Props) {
@@ -57,12 +69,18 @@ export default function TableGrid({ tableId, initialCells, initialTitle }: Props
   const [titleDraft, setTitleDraft] = useState(initialTitle);
   const [focusRequest, setFocusRequest] = useState<FocusRequest | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const savingRef = useRef<Set<string>>(new Set());
+  const savingRef = useRef<Map<string, string>>(new Map());
+
+  // Track max used row/col incrementally instead of recomputing from entire grid
+  const initMax = computeMaxUsed(initialCells);
+  const [maxRow, setMaxRow] = useState(initMax.maxRow);
+  const [maxCol, setMaxCol] = useState(initMax.maxCol);
 
   // Keep gridRef in sync with grid state
   useEffect(() => { gridRef.current = grid; }, [grid]);
 
-  const { rows, cols } = useMemo(() => computeDimensions(grid), [grid]);
+  const rows = Math.max(MIN_ROWS, maxRow + 1 + PADDING);
+  const cols = Math.max(MIN_COLS, maxCol + 1 + PADDING);
 
   // Subscribe to Supabase Realtime for this table
   useEffect(() => {
@@ -79,13 +97,22 @@ export default function TableGrid({ tableId, initialCells, initialTitle }: Props
         (payload) => {
           const cell = payload.new as CellRow;
           const key = cellKey(cell.row, cell.col);
-          // Skip if this client is currently saving this cell (avoid echo)
-          if (savingRef.current.has(key)) return;
+          // Only suppress if the incoming value matches what we saved (our own echo)
+          const savedValue = savingRef.current.get(key);
+          if (savedValue !== undefined) {
+            if (savedValue === cell.value) return;
+            // Different value means another user edited the same cell — apply it
+            savingRef.current.delete(key);
+          }
           setGrid(prev => {
             const next = new Map(prev);
             next.set(key, cell.value);
             return next;
           });
+          if (cell.value) {
+            setMaxRow(prev => Math.max(prev, cell.row));
+            setMaxCol(prev => Math.max(prev, cell.col));
+          }
         }
       )
       .on(
@@ -98,7 +125,9 @@ export default function TableGrid({ tableId, initialCells, initialTitle }: Props
         },
         (payload) => {
           const updated = payload.new as { title: string };
-          if (!savingRef.current.has('title')) {
+          const savedTitle = savingRef.current.get('title');
+          if (savedTitle === undefined || savedTitle !== updated.title) {
+            savingRef.current.delete('title');
             setTitle(updated.title);
           }
         }
@@ -113,7 +142,7 @@ export default function TableGrid({ tableId, initialCells, initialTitle }: Props
     if (value === title) return;
     const previousTitle = title;
     setTitle(value);
-    savingRef.current.add('title');
+    savingRef.current.set('title', value);
     const { error } = await supabase.from('tables').update({ title: value }).eq('id', tableId);
     setTimeout(() => savingRef.current.delete('title'), 2000);
     if (error) {
@@ -128,8 +157,12 @@ export default function TableGrid({ tableId, initialCells, initialTitle }: Props
     const previousValue = gridRef.current.get(key) ?? '';
     // Optimistically update local state
     setGrid(prev => { const next = new Map(prev); next.set(key, value); return next; });
+    if (value) {
+      setMaxRow(prev => Math.max(prev, row));
+      setMaxCol(prev => Math.max(prev, col));
+    }
     // Mark as saving so we ignore the Realtime echo
-    savingRef.current.add(key);
+    savingRef.current.set(key, value);
     const { error } = await supabase.from('cells').upsert({
       table_id: tableId,
       row,

@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase, type TableRow, type CellRow } from '@/lib/supabase';
-import { computeTableDimensions, sortTables, type TableMeta, type SortKey, type SortDir } from '@/lib/gridUtils';
+import { supabase, type TableRow } from '@/lib/supabase';
+import { sortTables, type TableMeta, type SortKey, type SortDir } from '@/lib/gridUtils';
 
 async function logout() {
   const res = await fetch('/api/admin/logout', { method: 'POST' });
@@ -28,32 +28,35 @@ export default function AdminPage() {
   const [sortDir, setSortDir] = useState<SortDir>('desc');
 
   async function loadTables() {
-    const [{ data: tablesData, error: tablesError }, { data: cellsData, error: cellsError }] = await Promise.all([
+    type TableStats = { table_id: string; max_row: number; max_col: number; last_edit: string | null };
+
+    const [tablesResult, statsResult] = await Promise.all([
       supabase.from('tables').select('id, title, created_at').order('created_at', { ascending: false }),
-      supabase.from('cells').select('table_id, row, col, updated_at'),
+      supabase.rpc('table_stats'),
     ]);
 
-    if (tablesError || cellsError) {
+    if (tablesResult.error || statsResult.error) {
       setError('Failed to load tables.');
       setLoading(false);
       return;
     }
 
-    const dims = computeTableDimensions(cellsData as Pick<CellRow, 'table_id' | 'row' | 'col'>[]);
+    const tablesData = tablesResult.data as TableRow[];
+    const statsData = statsResult.data as TableStats[];
 
-    const lastEdits = new Map<string, string>();
-    for (const c of cellsData as Pick<CellRow, 'table_id' | 'updated_at'>[]) {
-      const prev = lastEdits.get(c.table_id);
-      if (!prev || c.updated_at > prev) lastEdits.set(c.table_id, c.updated_at);
-    }
+    const statsMap = new Map<string, TableStats>();
+    for (const s of statsData ?? []) statsMap.set(s.table_id, s);
 
     setTables(
-      (tablesData as TableRow[]).map(t => ({
-        ...t,
-        rows: dims.get(t.id)?.rows ?? 0,
-        cols: dims.get(t.id)?.cols ?? 0,
-        lastEdit: lastEdits.get(t.id) ?? null,
-      }))
+      (tablesData ?? []).map(t => {
+        const s = statsMap.get(t.id);
+        return {
+          ...t,
+          rows: s ? s.max_row + 1 : 0,
+          cols: s ? s.max_col + 1 : 0,
+          lastEdit: s?.last_edit ?? null,
+        };
+      })
     );
     setLoading(false);
   }

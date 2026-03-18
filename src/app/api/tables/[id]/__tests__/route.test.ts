@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { NextRequest } from 'next/server';
 import { sha256 } from '@/lib/utils';
 
 const { mockEqTables, mockDeleteTables, mockAdminFrom } = vi.hoisted(() => ({
@@ -14,9 +15,10 @@ vi.mock('@/lib/supabaseAdmin', () => ({
 import { DELETE } from '@/app/api/tables/[id]/route';
 
 function makeReq(cookie?: string) {
+  const url = 'http://localhost';
   const headers: Record<string, string> = {};
   if (cookie) headers['cookie'] = cookie;
-  return new Request('http://localhost', { method: 'DELETE', headers });
+  return new NextRequest(url, { method: 'DELETE', headers });
 }
 
 describe('DELETE /api/tables/[id]', () => {
