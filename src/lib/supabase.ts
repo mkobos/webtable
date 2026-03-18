@@ -1,5 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
+// Types suffixed with "Row" represent the shape of a database SELECT result,
+// following the convention used by Supabase's generated types.
+
 export type CellRow = {
   table_id: string;
   row: number;

@@ -1,5 +1,7 @@
 import type { CellRow, TableRow } from '@/lib/supabase';
 
+// TableMeta extends TableRow with computed fields (rows, cols, lastEdit) derived from cell stats.
+// TableRow is kept for raw DB fetches where these computed fields don't exist yet.
 export type TableMeta = TableRow & { rows: number; cols: number; lastEdit: string | null };
 export type SortKey = 'title' | 'rows' | 'cols' | 'created_at' | 'lastEdit';
 export type SortDir = 'asc' | 'desc';
